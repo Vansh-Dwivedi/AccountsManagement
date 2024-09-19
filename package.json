@@ -1,0 +1,17 @@
+{
+  "name": "nav-accounts-web-app",
+  "version": "1.0.0",
+  "scripts": {
+    "client:start": "cd client && npm start",
+    "client:build": "cd client && npm run build",
+    "server:start": "cd server && npm start",
+    "server:build": "cd server && npm run build",
+    "build": "npm run client:build && npm run server:build"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  }
+}

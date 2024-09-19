@@ -1,0 +1,39 @@
+.chat-submissions {
+  margin-top: 20px;
+}
+
+.chat-submissions table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.chat-submissions th, .chat-submissions td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.chat-submissions th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.chat-submissions tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.chat-submissions tr:hover {
+  background-color: #f5f5f5;
+}
+
+.chat-submissions button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.chat-submissions button:hover {
+  background-color: #45a049;
+}

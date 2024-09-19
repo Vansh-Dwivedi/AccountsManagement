@@ -1,0 +1,14 @@
+# Environment variables
+/server/.env
+/client/.env
+/client/.env.development.local
+
+# Dependencies
+node_modules/
+/server/node_modules/
+/client/node_modules/
+
+# Package lock files
+package-lock.json
+/server/package-lock.json
+/client/package-lock.json

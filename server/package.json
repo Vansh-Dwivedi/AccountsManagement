@@ -1,0 +1,31 @@
+{
+  "name": "nav-accounts-web-app-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node index.js",
+    "seed": "node scripts/seedUsers.js",
+    "build": "echo 'No build step required for server'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.17.1",
+    "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.2.0",
+    "file-type": "^16.5.4",
+    "fs": "^0.0.1-security",
+    "helmet": "^7.1.0",
+    "https": "^1.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.1",
+    "mongoose-paginate-v2": "^1.8.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.15",
+    "socket.io": "^4.7.5"
+  }
+}
