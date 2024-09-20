@@ -1,180 +1,180 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import api from '../../utils/api';
 import './ChatComponent.css';
+import { AuthContext } from '../../context/AuthContext';
+import { toast } from 'react-toastify';
 
-const truncateFileName = (filename, maxLength = 15) => {
-  if (filename.length <= maxLength) return filename;
-  const extension = filename.split('.').pop();
-  const nameWithoutExtension = filename.slice(0, -(extension.length + 1));
-  const truncatedName = nameWithoutExtension.slice(0, maxLength - 3) + '...';
-  return `${truncatedName}.${extension}`;
-};
-
-const ChatComponent = ({ currentUser, otherUser }) => {
-  const [newMessage, setNewMessage] = useState('');
-  const [file, setFile] = useState(null);
+const ChatComponent = ({ otherUser, onClose }) => {
+  const { user } = useContext(AuthContext);
+  console.log('Auth context:', user);
   const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [file, setFile] = useState(null);
   const [socket, setSocket] = useState(null);
   const messagesEndRef = useRef(null);
-  const audioRef = useRef(new Audio('/notification.mp3'));
+  const [error, setError] = useState('');
 
-  // Initialize socket connection
-  useEffect(() => {
-    const newSocket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000', {
-      withCredentials: true,
-      transports: ['websocket', 'polling']
-    });
-    setSocket(newSocket);
-
-    newSocket.on('connect', () => {
-      console.log('Socket connected');
-      newSocket.emit('join', currentUser._id);
-    });
-
-    newSocket.on('message', (message) => {
-      if (message.sender !== currentUser._id) {
-        audioRef.current.play();
+  const addMessage = useCallback((message) => {
+    setMessages((prevMessages) => {
+      const messageExists = prevMessages.some((msg) => msg._id === message._id);
+      if (!messageExists) {
+        return [...prevMessages, message];
       }
-      setMessages((prevMessages) => [...prevMessages, message]);
+      return prevMessages;
     });
+  }, []);
 
-    return () => newSocket.close();
-  }, [currentUser._id]);
-
-  // Fetch messages for the selected user (otherUser)
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (otherUser && otherUser._id) {
-        try {
-          const response = await api.get(`/api/chat/messages/${otherUser._id}`);
-          setMessages(response.data);
-        } catch (error) {
-          console.error('Error fetching messages:', error);
-        }
-      }
-    };
-    fetchMessages();
-  }, [otherUser]);
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() && !file) return;
-
-    const formData = new FormData();
-    formData.append('message', newMessage);
-    formData.append('receiverId', otherUser._id);
-    if (file) formData.append('file', file);
-
-    try {
-      const response = await api.post('/api/chat/send', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      socket.emit('sendMessage', response.data);
-      setNewMessage('');
-      setFile(null);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(scrollToBottom, [messages]);
-
-  const handleFileDownload = async (file) => {
-    console.log('File object:', file);
-    if (!file || typeof file !== 'object' || !file.path) {
-      console.error('Invalid file object:', file);
+    if (!user || !otherUser) {
+      console.error('Current user or other user is undefined');
       return;
     }
 
-    try {
-      const response = await api.get(`/api/chat/download/${encodeURIComponent(file.path)}`, {
-        responseType: 'blob',
-      });
-      
-      console.log('Response headers:', response.headers);
-      
-      // Get the filename from the Content-Disposition header
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = file.filename || 'download';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
-      
-      console.log('Filename:', filename);
+    const newSocket = io('http://localhost:5000');
+    setSocket(newSocket);
+    
+    newSocket.emit('join', user._id);
 
-      const blob = new Blob([response.data]);
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+    newSocket.on('newMessage', (newMessage) => {
+      addMessage(newMessage);
+      if (newMessage.sender !== user._id) {
+        toast.info(`New message from ${otherUser.username}`);
+      }
+    });
+
+    return () => {
+      newSocket.off('newMessage');
+      newSocket.disconnect();
+    };
+  }, [user, otherUser, addMessage]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (otherUser?._id) {
+      fetchMessages();
+    }
+  }, [otherUser?._id]);
+
+  const fetchMessages = async () => {
+    try {
+      const response = await api.get(`/api/chat/messages/${otherUser._id}`);
+      setMessages(response.data);
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error fetching messages:', error.response?.data || error.message);
+    }
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (inputMessage || file) {
+      const formData = new FormData();
+      formData.append('message', inputMessage);
+      formData.append('receiver', otherUser._id); // Add this line
+      if (file) {
+        formData.append('file', file);
+      }
+
+      try {
+        const response = await api.post('/api/chat/send', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        console.log('Server response:', response.data);
+        addMessage(response.data);
+        setInputMessage('');
+        setFile(null);
+
+        if (socket) {
+          socket.emit('sendMessage', response.data);
+        }
+      } catch (error) {
+        console.error('Error sending message:', error.response?.data || error.message);
+        setError(error.response?.data?.error || 'Error sending message');
+      }
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    setInputMessage(selectedFile ? `File selected: ${selectedFile.name}` : '');
+  };
+
+  const canSubmitToAdmin = user?.role === 'manager' && otherUser?.role === 'client';
+
+  if (!user || !otherUser) {
+    return <div>Loading chat...</div>;
+  }
+
+  const renderFileAttachment = (file) => {
+    if (!file) return null;
+    
+    const fileUrl = `${process.env.REACT_APP_API_URL}/uploads/${file.filename}`;
+    const fileExtension = file.originalName.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+      return (
+        <div className="file-attachment">
+          <img src={fileUrl} alt={file.originalName} style={{maxWidth: '200px', maxHeight: '200px'}} />
+          <a href={fileUrl} download={file.originalName}>Download {file.originalName}</a>
+        </div>
+      );
+    } else {
+      return (
+        <div className="file-attachment">
+          <a href={fileUrl} download={file.originalName}>Download {file.originalName}</a>
+        </div>
+      );
     }
   };
 
   return (
-    <div className="chat-container">
-      <div className="chat-wrapper">
-        <div className="chat-content">
-          <div className="chat-header">
-            {otherUser && (
-              <div className="user-info">
-                <img src={otherUser.profilePic} alt={otherUser.username} className="user-profile-pic" />
-                <div>
-                  <p className="user-username">{otherUser.username}</p>
-                  <p className="user-email">{otherUser.email}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="messages">
-            {messages.map((msg) => (
-              <div key={msg._id} className={`message ${msg.sender === currentUser._id ? 'sent' : 'received'}`}>
-                <p>{msg.message}</p>
-                {msg.file && (
-                  <div>
-                    <button onClick={() => handleFileDownload(msg.file)} className="file-download-btn">
-                      Download {truncateFileName(msg.file.filename || 'File')}
-                    </button>
-                  </div>
-                )}
-                <span className="timestamp">{new Date(msg.timestamp).toLocaleString()}</span>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="input-area">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-            />
-            <label htmlFor="file-upload" className="custom-file-upload">
-              Attach File
-            </label>
-            <input
-              id="file-upload"
-              type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
-            <button onClick={sendMessage}>Send</button>
-          </div>
-        </div>
+    <div className="chat-component">
+      <div className="chat-header">
+        <h3>Chat with {otherUser.username}</h3>
+        <button onClick={onClose}>Close</button>
       </div>
+      <div className="messages">
+        {messages.map((msg, index) => (
+          <div key={index} className={`message ${msg.sender._id === user._id ? 'sent' : 'received'}`}>
+            <p>{msg.content}</p>
+            {msg.file && renderFileAttachment(msg.file)}
+            <span className="timestamp">{new Date(msg.timestamp).toLocaleString()}</span>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <form onSubmit={sendMessage} className="message-input">
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="Type a message..."
+        />
+        <label htmlFor="file-upload" className="custom-file-upload">
+          Choose File
+        </label>
+        <input
+          id="file-upload"
+          type="file"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
+        <button type="submit" className="send-button">Send</button>
+      </form>
+      {canSubmitToAdmin && (
+        <button onClick={submitToAdmin} className="submit-to-admin">
+          Submit to Admin
+        </button>
+      )}
     </div>
   );
 };

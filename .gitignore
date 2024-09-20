@@ -12,3 +12,6 @@ node_modules/
 package-lock.json
 /server/package-lock.json
 /client/package-lock.json
+
+# Uploads
+/server/uploads/

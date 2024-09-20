@@ -2,19 +2,22 @@ const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 const auth = require('../middleware/auth');
-const { chatLimiter } = require('../middleware/rateLimiter');
+const multer = require('multer');
+const path = require('path');
 
-router.get('/conversations', auth, chatController.getConversations);
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+  }
+});
+
+const upload = multer({ storage: storage });
+
 router.get('/messages/:userId', auth, chatController.getMessages);
-router.post('/send', auth, chatLimiter, chatController.sendMessage);
-router.post('/submit-to-admin', auth, chatController.sendToAdmin); // Add this line
-router.get('/submissions', auth, chatController.getChatSubmissions);
-router.put('/submissions/:submissionId', auth, chatController.updateChatSubmissionStatus);
-router.get('/sent-remarks', auth, chatController.getSentRemarks);
-router.put('/remarks/:remarkId', auth, chatController.updateRemarkStatus);
-router.get('/download/:filePath', auth, chatController.downloadFile);
-
-// Add this new route
-router.get('/unread-counts/:userId', auth, chatController.getUnreadMessageCounts);
+router.post('/send', auth, upload.single('file'), chatController.sendMessage);
 
 module.exports = router;

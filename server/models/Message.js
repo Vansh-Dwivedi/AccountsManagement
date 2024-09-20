@@ -17,15 +17,12 @@ const MessageSchema = new mongoose.Schema({
   },
   file: {
     filename: String,
+    originalName: String,
     path: String
   },
   timestamp: {
     type: Date,
     default: Date.now
-  },
-  read: {
-    type: Boolean,
-    default: false
   }
 });
 

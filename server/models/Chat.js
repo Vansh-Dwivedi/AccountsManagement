@@ -13,14 +13,7 @@ const ChatSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: function() {
-      return !this.file; // Message is required only if there's no file
-    }
-  },
-  file: {
-    filename: String,
-    originalName: String,
-    path: String
+    required: true
   },
   timestamp: {
     type: Date,

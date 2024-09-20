@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import './AdminDashboard.css';
 import AuditLogs from '../AuditLogs';
 import ChatSubmissions from '../ChatSubmissions';
+import ChatComponent from '../Chat/ChatComponent'; // Import the ChatComponent
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -16,6 +17,8 @@ const AdminDashboard = () => {
   const [roles, setRoles] = useState([]);
   const [pendingChanges, setPendingChanges] = useState({});
   const [message, setMessage] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -154,6 +157,16 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
+  const handleStartChat = (user) => {
+    setSelectedUser(user);
+    setShowChat(true);
+  };
+
+  const handleCloseChat = () => {
+    setShowChat(false);
+    setSelectedUser(null);
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -253,6 +266,9 @@ const AdminDashboard = () => {
                         Apply
                       </button>
                     )}
+                    <button onClick={() => handleStartChat(user)} className="chat-button">
+                      Chat
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -263,6 +279,13 @@ const AdminDashboard = () => {
 
       {activeTab === 'logs' && <AuditLogs />}
       {activeTab === 'chatSubmissions' && <ChatSubmissions />}
+
+      {showChat && selectedUser && (
+        <ChatComponent
+          otherUser={selectedUser}
+          onClose={handleCloseChat}
+        />
+      )}
     </div>
   );
 };

@@ -1,19 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import ClientInfoForm from '../ClientInfoForm';
 import './ClientDashboard.css';
 import ChatComponent from '../Chat/ChatComponent';
-
+import NotificationBubble from '../NotificationBubble'; // Update this line
+import { AuthContext } from '../../context/AuthContext';
 
 const ClientDashboard = () => {
-  const [clientData, setClientData] = useState(null);
-  const [profilePic, setProfilePic] = useState(null);
+  const { user } = useContext(AuthContext);
+  const [showChat, setShowChat] = useState(false);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  const [adminUser, setAdminUser] = useState(null);
+  const [clientData, setClientData] = useState(null);
+  const [profilePic, setProfilePic] = useState(null); // Add this line
 
   useEffect(() => {
     fetchClientData();
+    fetchAdminUser();
   }, []);
 
   const fetchClientData = async () => {
@@ -30,6 +35,15 @@ const ClientDashboard = () => {
       if (error.response && error.response.status === 401) {
         navigate('/login');
       }
+    }
+  };
+
+  const fetchAdminUser = async () => {
+    try {
+      const response = await api.get('/api/users/admin');
+      setAdminUser(response.data);
+    } catch (error) {
+      console.error('Error fetching admin user:', error);
     }
   };
 
@@ -63,11 +77,14 @@ const ClientDashboard = () => {
     navigate('/login');
   };
 
-  if (!clientData) return <div>Loading...</div>;
+  if (!user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="client-dashboard">
       <h2>Welcome to Your Client Dashboard</h2>
+      <NotificationBubble userId={clientData._id} />
       <div className="profile-section">
         {profilePic ? (
           <div className="profile-pic-container">
@@ -87,23 +104,41 @@ const ClientDashboard = () => {
       <div className="tabs">
         <button onClick={() => setActiveTab('profile')}>Profile</button>
         <button onClick={() => setActiveTab('submitInfo')}>Submit Info</button>
+        <button onClick={() => setActiveTab('chat')} className="chat-button">
+          Chat with Manager
+        </button>
+        <button onClick={() => setActiveTab('adminChat')} disabled={!adminUser}>
+          Chat with Admin
+        </button>
       </div>
       {activeTab === 'profile' && (
         <div>
           <p>Username: {clientData.username}</p>
           <p>Email: {clientData.email}</p>
           <p>Role: {clientData.role}</p>
+          {clientData.assignedManager ? (
+            <p>Assigned Manager: {clientData.assignedManager.username}</p>
+          ) : (
+            <p>No manager assigned yet.</p>
+          )}
         </div>
       )}
       {activeTab === 'submitInfo' && <ClientInfoForm />}
+      {activeTab === 'chat' && clientData.assignedManager && (
+        <ChatComponent 
+          currentUser={clientData} 
+          otherUser={clientData.assignedManager}
+          onClose={() => setActiveTab('profile')}
+        />
+      )}
+      {activeTab === 'adminChat' && adminUser && (
+        <ChatComponent 
+          currentUser={clientData} 
+          otherUser={adminUser}
+          onClose={() => setActiveTab('profile')}
+        />
+      )}
       <button onClick={handleLogout}>Logout</button>
-      <ChatComponent 
-        currentUser={clientData} 
-        otherUser={clientData.assignedManager ? 
-          { _id: clientData.assignedManager._id, role: 'manager' } : 
-          null
-        } 
-      />
     </div>
   );
 };

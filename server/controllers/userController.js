@@ -285,3 +285,16 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: 'Error deleting user', error: error.message });
   }
 };
+
+exports.getAdminUser = async (req, res) => {
+  try {
+    const adminUser = await User.findOne({ role: 'admin' }).select('-password');
+    if (!adminUser) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+    res.json(adminUser);
+  } catch (error) {
+    console.error('Error fetching admin user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

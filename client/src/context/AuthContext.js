@@ -4,43 +4,26 @@ import api from '../utils/api';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [authState, setAuthState] = useState({
-    token: localStorage.getItem('token'),
-    isAuthenticated: null,
-    user: null,
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadUser = async () => {
-      if (authState.token) {
-        try {
-          const res = await api.get('/users/profile');
-          setAuthState({
-            ...authState,
-            isAuthenticated: true,
-            user: res.data,
-          });
-        } catch (error) {
-          setAuthState({
-            ...authState,
-            token: null,
-            isAuthenticated: false,
-            user: null,
-          });
-        }
-      } else {
-        setAuthState({
-          ...authState,
-          isAuthenticated: false,
-        });
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('/api/users/profile');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadUser();
-  }, [authState.token]);
+    fetchUser();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ authState, setAuthState }}>
+    <AuthContext.Provider value={{ user, setUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

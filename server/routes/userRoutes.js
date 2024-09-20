@@ -43,4 +43,7 @@ router.get('/roles', auth, userController.getAllRoles);
 // New route to delete a user
 router.delete('/:userId', auth, roleCheck(['admin']), userController.deleteUser);
 
+// New route to fetch the admin user
+router.get('/admin', auth, userController.getAdminUser);
+
 module.exports = router;

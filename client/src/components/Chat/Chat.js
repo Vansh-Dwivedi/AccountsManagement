@@ -28,6 +28,19 @@ const Chat = () => {
     }
   }, [socket]);
 
+  useEffect(() => {
+    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
+    socket.emit('join', authState.user.id);
+    
+    socket.on('newMessage', (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [authState.user.id]);
+
   const sendMessage = async (e) => {
     e.preventDefault();
     setError('');
@@ -80,14 +93,22 @@ const Chat = () => {
         ))}
       </div>
       {error && <p style={{color: 'red'}}>{error}</p>}
-      <form onSubmit={sendMessage}>
+      <form onSubmit={sendMessage} className="input-area">
         <input
           type="text"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Type a message"
         />
-        <input type="file" onChange={handleFileChange} accept=".jpg,.jpeg,.png,.pdf" />
+        <label htmlFor="file-upload" className="custom-file-upload">
+          <i className="fa fa-cloud-upload"></i> Choose File
+        </label>
+        <input
+          id="file-upload"
+          type="file"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
         <button type="submit">Send</button>
       </form>
     </div>

@@ -24,7 +24,7 @@ const app = express();
 
 // Configure CORS
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -77,17 +77,12 @@ app.use((req, res, next) => {
 });
 
 // Update MongoDB connection code
-const MONGODB_URI = 'mongodb://localhost:27017/nav-accounting';
-
-mongoose.connect(MONGODB_URI, {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => {
-  console.error('MongoDB connection error:', err);
-  process.exit(1);
-});
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Make sure this line is present and the JWT_SECRET is set in your .env file
 if (!process.env.JWT_SECRET) {
@@ -114,39 +109,33 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Socket.IO
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: corsOptions
+  cors: {
+    origin: process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 });
 
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
+// Set io instance to app
+app.set('io', io);
 
 // Create a mapping of user IDs to their socket IDs
 const userSockets = {};
 
 io.on('connection', (socket) => {
-  console.log('A client connected:', socket.id);
+  console.log('New client connected');
 
-  // Handle the 'register' event
-  socket.on('register', ({ userId }) => {
-    console.log(`User registered: ${userId} with socket ID: ${socket.id}`);
-    userSockets[userId] = socket.id;
+  socket.on('join', (userId) => {
+    socket.join(userId);
   });
 
-  // Handle client disconnection
+  socket.on('sendMessage', (message) => {
+    io.to(message.receiver).emit('newMessage', message);
+  });
+
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-    // Remove the socket ID from the userSockets mapping
-    for (const userId in userSockets) {
-      if (userSockets[userId] === socket.id) {
-        delete userSockets[userId];
-        break;
-      }
-    }
+    console.log('Client disconnected');
   });
-
-  // ... other event handlers
 });
 
 // Function to send a message to a specific user
