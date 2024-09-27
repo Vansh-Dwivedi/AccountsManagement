@@ -237,3 +237,9 @@ button {
   border-radius: 3px;
   cursor: pointer;
 }
+
+.notification-bubble {
+  position: fixed;
+  right: 10px;
+  top: 10px;
+}

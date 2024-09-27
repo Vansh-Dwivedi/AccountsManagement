@@ -266,7 +266,7 @@ const AdminDashboard = () => {
                         Apply
                       </button>
                     )}
-                    <button onClick={() => handleStartChat(user)} className="chat-button">
+                    <button onClick={() => handleStartChat(user)}>
                       Chat
                     </button>
                   </td>

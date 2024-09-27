@@ -15,8 +15,6 @@ import MasterDeptDashboard from './components/Dashboard/MasterDeptDashboard';
 import OperatorDashboard from './components/Dashboard/OperatorDashboard';
 import HelperDashboard from './components/Dashboard/HelperDashboard';
 import Unauthorized from './components/Unauthorized';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -67,7 +65,6 @@ function App() {
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-        <ToastContainer />
       </Router>
     </div>
   );

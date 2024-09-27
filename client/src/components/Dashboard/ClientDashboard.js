@@ -84,7 +84,6 @@ const ClientDashboard = () => {
   return (
     <div className="client-dashboard">
       <h2>Welcome to Your Client Dashboard</h2>
-      <NotificationBubble userId={clientData._id} />
       <div className="profile-section">
         {profilePic ? (
           <div className="profile-pic-container">
@@ -104,6 +103,7 @@ const ClientDashboard = () => {
       <div className="tabs">
         <button onClick={() => setActiveTab('profile')}>Profile</button>
         <button onClick={() => setActiveTab('submitInfo')}>Submit Info</button>
+        <NotificationBubble userId={clientData._id} />
         <button onClick={() => setActiveTab('chat')} className="chat-button">
           Chat with Manager
         </button>

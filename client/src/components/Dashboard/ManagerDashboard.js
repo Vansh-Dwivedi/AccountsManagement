@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import './ManagerDashboard.css';
 import ChatComponent from '../Chat/ChatComponent';
 import io from 'socket.io-client';
+import NotificationBubble from '../NotificationBubble';
 
 const ManagerDashboard = () => {
   const [managerData, setManagerData] = useState(null);
@@ -168,6 +169,7 @@ const ManagerDashboard = () => {
               </ul>
             </div>
           )}
+          <NotificationBubble userId={managerData._id} />
           {activeTab === 'chat' && (
             <div className="chat-section">
               <h3>Chat with Clients</h3>

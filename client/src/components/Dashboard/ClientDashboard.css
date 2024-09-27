@@ -46,3 +46,8 @@ button {
   margin-top: 5px;
 }
 
+.notification-bubble {
+  position: fixed;
+  right: 7.5px;
+  top: 338.5px;
+}

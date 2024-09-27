@@ -57,6 +57,16 @@ To set up and run this MERN stack application, follow these steps:
 
 - The Socket.io connection for real-time chat is now correctly configured. Ensure that the server is running on the expected port (default: 5000) for the chat functionality to work properly.
 
+- The passwords for all user are:
+   ```
+   managerfirst :- man :- man@man.com
+   cli3 :- cli3 :- cli3@cli3.com
+   cli4 :- cli4 :- cli4@cli4.com
+   adminfirst :- adi :- adi@adi.com
+
+   pattern={username}{password}{email}
+   ```
+
 **Next Steps:**
 1. Implement additional features for each user role using React and Express
 2. Optimize performance and scalability of the chat system
