@@ -2,6 +2,7 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  margin-top: 100px;
 }
 
 .profile-section {
@@ -44,10 +45,4 @@ input[type="file"] {
 button {
   padding: 5px 10px;
   margin-top: 5px;
-}
-
-.notification-bubble {
-  position: fixed;
-  right: 7.5px;
-  top: 338.5px;
 }

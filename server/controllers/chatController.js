@@ -4,7 +4,7 @@ const ChatSubmission = require("../models/ChatSubmission");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const Chat = require("../models/Chat");
+const Notification = require("../models/Notification");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -19,11 +19,15 @@ const upload = multer({ storage: storage }).single("file");
 
 exports.sendMessage = async (req, res) => {
   try {
-    const { receiver, message } = req.body;
-    const sender = req.user.id;
-    
+    const { receiver, message, fileType } = req.body;
+    const sender = req.user.id; // This should be the authenticated user's ID
+
+    console.log(`Sending message from ${sender} to ${receiver}`);
+
     if (!receiver || !message) {
-      return res.status(400).json({ error: 'Receiver and message are required' });
+      return res
+        .status(400)
+        .json({ error: "Receiver and message are required" });
     }
 
     let file;
@@ -31,24 +35,44 @@ exports.sendMessage = async (req, res) => {
       file = {
         filename: req.file.filename,
         originalName: req.file.originalname,
-        path: req.file.path
+        path: req.file.path,
       };
     }
 
+    // Create and save the message
     const newMessage = new Message({
       sender,
       receiver,
       content: message,
-      file
+      file,
+      fileType,
     });
 
     await newMessage.save();
 
     // Populate sender information
-    await newMessage.populate("sender", "username");
+    await newMessage.populate("sender", "username profilePic");
 
-    // Emit the message to the receiver using Socket.io
-    req.app.get("io").to(receiver).emit("newMessage", newMessage);
+    // Fetch the sender's user information
+    const senderUser = await User.findById(sender);
+
+    // Create and save the notification
+    const newNotification = new Notification({
+      userId: receiver,
+      sender: sender, // Set the sender field to the authenticated user's ID
+      message: `${senderUser.username}`,
+      senderProfilePic: senderUser.profilePic || "default-profile-pic.jpg",
+      createdAt: new Date(),
+    });
+
+    await newNotification.save();
+
+    console.log(`Emitting newNotification to ${receiver}`);
+    req.app.get("io").to(receiver.toString()).emit("newMessage", newMessage);
+    req.app
+      .get("io")
+      .to(receiver.toString())
+      .emit("newNotification", newNotification);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -59,17 +83,48 @@ exports.sendMessage = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUserId = req.user.id;
+    const { chatId } = req.params;
+    console.log('Received chatId:', chatId); // Debug log
+
+    if (!chatId || chatId === 'undefined' || !chatId.includes('-')) {
+      return res.status(400).json({ error: 'Invalid chat ID' });
+    }
+
+    const [user1, user2] = chatId.split('-');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+
+    if (!user1 || !user2) {
+      return res.status(400).json({ error: 'Invalid chat ID format' });
+    }
+
+    console.log('Querying messages for users:', user1, user2); // Debug log
 
     const messages = await Message.find({
       $or: [
-        { sender: currentUserId, receiver: userId },
-        { sender: userId, receiver: currentUserId },
-      ]
-    }).sort({ timestamp: 1 }).populate("sender", "username");
+        { sender: user1, receiver: user2 },
+        { sender: user2, receiver: user1 },
+      ],
+    })
+      .sort({ timestamp: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate("sender", "username profilePic")
+      .populate("receiver", "username profilePic");
 
-    res.json(messages);
+    const totalMessages = await Message.countDocuments({
+      $or: [
+        { sender: user1, receiver: user2 },
+        { sender: user2, receiver: user1 },
+      ],
+    });
+
+    res.json({
+      messages: messages.reverse(),
+      currentPage: page,
+      totalPages: Math.ceil(totalMessages / limit),
+      totalMessages,
+    });
   } catch (error) {
     console.error("Error in getMessages:", error);
     res.status(500).json({ error: "Server error", details: error.message });

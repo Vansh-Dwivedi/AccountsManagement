@@ -20,6 +20,7 @@ const upload = multer({ storage: storage });
 
 // Existing routes
 router.get('/profile', auth, userController.getProfile);
+router.get('/profile/:userId', auth, userController.getUserProfileById);
 router.put('/profile', auth, userController.updateProfile);
 router.post('/profile-pic', auth, upload.single('profilePic'), userController.uploadProfilePic);
 router.delete('/profile-pic', auth, userController.deleteProfilePic);

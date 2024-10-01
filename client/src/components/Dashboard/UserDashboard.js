@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import Header from '../Header';
 
 const UserDashboard = () => {
   const [profilePic, setProfilePic] = useState(null);
@@ -52,6 +53,7 @@ const UserDashboard = () => {
   return (
     <div>
       <h2>User Dashboard</h2>
+      <Header />
       <div className="profile-section">
         {profilePic ? (
           <img src={profilePic} alt="Profile" className="profile-pic" />

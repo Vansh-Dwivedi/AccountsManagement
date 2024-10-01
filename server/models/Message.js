@@ -20,6 +20,10 @@ const MessageSchema = new mongoose.Schema({
     originalName: String,
     path: String
   },
+  fileType: {
+    type: String,
+    required: false
+  },
   timestamp: {
     type: Date,
     default: Date.now
